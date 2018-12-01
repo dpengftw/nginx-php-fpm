@@ -187,6 +187,7 @@ RUN echo @testing http://nl.alpinelinux.org/alpine/edge/testing >> /etc/apk/repo
     libffi-dev \
     freetype-dev \
     sqlite-dev \
+    openssh \
     libjpeg-turbo-dev && \
     docker-php-ext-configure gd \
       --with-gd \
@@ -228,6 +229,10 @@ mkdir /var/www/html/
 ADD conf/nginx-site.conf /etc/nginx/sites-available/default.conf
 ADD conf/nginx-site-ssl.conf /etc/nginx/sites-available/default-ssl.conf
 RUN ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
+
+# openssh conf
+RUN echo "Port 2222" > /etc/ssh/sshd_config
+RUN /etc/init.d/sshd start
 
 # tweak php-fpm config
 RUN echo "cgi.fix_pathinfo=0" > ${php_vars} &&\
