@@ -232,6 +232,7 @@ RUN ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/defau
 
 # openssh conf
 RUN echo "Port 2222" > /etc/ssh/sshd_config
+RUN /usr/bin/ssh-keygen -A
 
 # tweak php-fpm config
 RUN echo "cgi.fix_pathinfo=0" > ${php_vars} &&\
