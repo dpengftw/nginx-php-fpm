@@ -17,12 +17,6 @@ if [ ! -z "$SSH_KEY" ]; then
  chmod 600 /root/.ssh/id_rsa
 fi
 
-if [ ! -z "$SSH_PUBLIC_KEY" ]; then
-  echo $SSH_PUBLIC_KEY > /root/.ssh/id_rsa.pub.base64
-  base64 -d /root/.ssh/id_rsa.pub.base64 >> /root/.ssh/authorized_keys
-  chmod 600 /root/.ssh/authorized_keys
-fi
-
 # Set custom webroot
 if [ ! -z "$WEBROOT" ]; then
  sed -i "s#root /var/www/html;#root ${WEBROOT};#g" /etc/nginx/sites-available/default.conf
