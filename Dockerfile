@@ -231,9 +231,10 @@ ADD conf/nginx-site-ssl.conf /etc/nginx/sites-available/default-ssl.conf
 RUN ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
 
 # openssh conf
-RUN echo "Port 2222" > /etc/ssh/sshd_config
-RUN /usr/bin/ssh-keygen -A
-RUN echo "root:Docker!" | /usr/sbin/chpasswd
+RUN echo "Port 2222" >> /etc/ssh/sshd_config && \
+echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+/usr/bin/ssh-keygen -A && \
+echo "root:Docker!" | /usr/sbin/chpasswd
 
 # tweak php-fpm config
 RUN echo "cgi.fix_pathinfo=0" > ${php_vars} &&\
@@ -273,6 +274,6 @@ ADD src/ /var/www/html/
 ADD errors/ /var/www/errors
 
 
-EXPOSE 443 80
+EXPOSE 443 80 2222
 
 CMD ["/start.sh"]
