@@ -24,6 +24,16 @@ else
  webroot=/var/www/html
 fi
 
+# Enables 404 pages through php index
+if [ ! -z "$PHP_CATCHALL" ]; then
+ sed -i 's#try_files $uri $uri/ =404;#try_files $uri $uri/ /index.php?$args;#g' /etc/nginx/sites-available/default.conf
+fi
+
+# Disable opcache
+if [ ! -z "$OPcache" ]; then
+ sed -i 's#zend_extension=opcache#;zend_extension=opcache#g' /usr/local/etc/php/php.ini
+fi
+
 # Setup git variables
 if [ ! -z "$GIT_EMAIL" ]; then
  git config --global user.email "$GIT_EMAIL"
@@ -58,6 +68,12 @@ if [ ! -d "/var/www/html/.git" ]; then
     fi
    fi
    ${GIT_COMMAND} /var/www/html || exit 1
+   if [ ! -z "$GIT_TAG" ]; then
+     git checkout ${GIT_TAG} || exit 1
+   fi
+   if [ ! -z "$GIT_COMMIT" ]; then
+     git checkout ${GIT_COMMIT} || exit 1
+   fi
    if [ -z "$SKIP_CHOWN" ]; then
      chown -Rf nginx.nginx /var/www/html
    fi
@@ -86,9 +102,9 @@ fi
 
 # Display PHP error's or not
 if [[ "$ERRORS" != "1" ]] ; then
- echo php_flag[display_errors] = off >> /usr/local/etc/php-fpm.conf
+ echo php_flag[display_errors] = off >> /usr/local/etc/php-fpm.d/www.conf
 else
- echo php_flag[display_errors] = on >> /usr/local/etc/php-fpm.conf
+ echo php_flag[display_errors] = on >> /usr/local/etc/php-fpm.d/www.conf
 fi
 
 # Display Version Details or not
@@ -117,7 +133,10 @@ if [ -f /etc/nginx/sites-available/default-ssl.conf ]; then
  fi
 fi
 
-#Display errors in docker logs
+# Set the desired timezone
+echo date.timezone=Europe/London > /usr/local/etc/php/conf.d/timezone.ini
+
+# Display errors in docker logs
 if [ ! -z "$PHP_ERRORS_STDERR" ]; then
   echo "log_errors = On" >> /usr/local/etc/php/conf.d/docker-vars.ini
   echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/docker-vars.ini
@@ -155,7 +174,9 @@ if [[ "$ENABLE_XDEBUG" == "1" ]] ; then
             echo "Xdebug already enabled... skipping"
         else
             echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > $XdebugFile # Note, single arrow to overwrite file.
-            echo "xdebug.remote_enable=1 "  >> $XdebugFile
+            echo "xdebug.start_with_request=yes"  >> $XdebugFile
+            echo "xdebug.client_host=host.docker.internal" >> $XdebugFile
+            echo "xdebug.mode=debug" >> $XdebugFile
             echo "xdebug.remote_log=/tmp/xdebug.log"  >> $XdebugFile
             echo "xdebug.remote_autostart=false "  >> $XdebugFile # I use the xdebug chrome extension instead of using autostart
             # NOTE: xdebug.remote_host is not needed here if you set an environment variable in docker-compose like so `- XDEBUG_CONFIG=remote_host=192.168.111.27`.
@@ -185,11 +206,14 @@ fi
 
 # Run custom scripts
 if [[ "$RUN_SCRIPTS" == "1" ]] ; then
-  if [ -d "/var/www/html/scripts/" ]; then
-    # make scripts executable incase they aren't
-    chmod -Rf 750 /var/www/html/scripts/*; sync;
+  scripts_dir="${SCRIPTS_DIR:-/var/www/html/scripts}"
+  if [ -d "$scripts_dir" ]; then
+    if [ -z "$SKIP_CHMOD" ]; then
+      # make scripts executable incase they aren't
+      chmod -Rf 750 $scripts_dir; sync;
+    fi
     # run scripts in number order
-    for i in `ls /var/www/html/scripts/`; do /var/www/html/scripts/$i ; done
+    for i in `ls $scripts_dir`; do $scripts_dir/$i ; done
   else
     echo "Can't find script directory"
   fi
