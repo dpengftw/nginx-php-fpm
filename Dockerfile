@@ -15,10 +15,15 @@ ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 RUN apk del openssh-client
 RUN apk add --no-cache openssh
 
+ADD scripts/start.sh /start.sh
+RUN chmod +x /start.sh
+
 # openssh conf
 RUN echo "Port 2222" >> /etc/ssh/sshd_config && \
 echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
 echo "root:Docker!" | /usr/sbin/chpasswd
+
+
 
 EXPOSE 443 80 2222
 

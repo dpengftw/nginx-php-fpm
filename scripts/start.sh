@@ -234,6 +234,5 @@ fi
 
 # Start supervisord and services
 /usr/bin/ssh-keygen -A
-exec /usr/sbin/sshd -D
+/usr/sbin/sshd -D &
 exec /usr/bin/supervisord -n -c /etc/supervisord.conf
-
